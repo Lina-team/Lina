@@ -45,7 +45,7 @@ async def help_command(message: Message):
 @router.message(F.text, TextCommandFilter(["+записка"]))
 async def create_note_(message: Message, bot: Bot):
     member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if not member != ChatMemberOwner and member != ChatMemberAdministrator:
+    if member != ChatMemberOwner and member != ChatMemberAdministrator:
         return
     try:
         a = message.text.find("\n")
@@ -65,7 +65,7 @@ async def create_note_(message: Message, bot: Bot):
 @router.message(F.text, TextCommandFilter(["-записка"]))
 async def delete_note_(message: Message, bot: Bot):
     member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if not member != ChatMemberOwner and member != ChatMemberAdministrator:
+    if member != ChatMemberOwner and member != ChatMemberAdministrator:
         return
     try:
         name = message.text[9:]
@@ -116,7 +116,7 @@ async def rules(message: Message):
 @router.message(F.text, TextCommandFilter(["+рулс", "лина +правила"]))
 async def add_rules(message: Message, bot: Bot):
     member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if not member != ChatMemberOwner and member != ChatMemberAdministrator:
+    if member != ChatMemberOwner and member != ChatMemberAdministrator:
         return
     try:
         a = message.text.find("\n")
