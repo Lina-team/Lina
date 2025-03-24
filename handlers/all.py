@@ -1,7 +1,6 @@
 import warnings
 
 from aiogram import Router, F, Bot
-from aiogram.filters import ChatMemberUpdatedFilter, JOIN_TRANSITION
 from aiogram.types import Message, ChatMemberUpdated, ChatMemberOwner, ChatMemberAdministrator
 
 from bs4 import XMLParsedAsHTMLWarning, BeautifulSoup
@@ -11,6 +10,8 @@ from requests import get
 from filters import TextCommandFilter
 
 from db.dao import set_note, delete_note, get_note, get_notes, get_rules, set_rules
+
+from filters import is_group_admin
 
 from middlewares import UserMiddleware
 
@@ -44,8 +45,7 @@ async def help_command(message: Message):
 
 @router.message(F.text, TextCommandFilter(["+записка"]))
 async def create_note_(message: Message, bot: Bot):
-    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if member != ChatMemberOwner and member != ChatMemberAdministrator:
+    if not is_group_admin(message, bot):
         return
     try:
         a = message.text.find("\n")
@@ -64,8 +64,7 @@ async def create_note_(message: Message, bot: Bot):
 
 @router.message(F.text, TextCommandFilter(["-записка"]))
 async def delete_note_(message: Message, bot: Bot):
-    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if member != ChatMemberOwner and member != ChatMemberAdministrator:
+    if not is_group_admin(message, bot):
         return
     try:
         name = message.text[9:]
@@ -115,8 +114,7 @@ async def rules(message: Message):
 
 @router.message(F.text, TextCommandFilter(["+рулс", "лина +правила"]))
 async def add_rules(message: Message, bot: Bot):
-    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-    if member != ChatMemberOwner and member != ChatMemberAdministrator:
+    if not is_group_admin(message, bot):
         return
     try:
         a = message.text.find("\n")
