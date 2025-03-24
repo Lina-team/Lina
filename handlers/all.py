@@ -104,7 +104,7 @@ async def rules(message: Message):
     if not rules_:
         await message.reply("Правил группы нет")
         return
-    await message.answer("*Правила группы:*\n" + rules_.replace('\n', ''))
+    await message.answer("*Правила группы:*\n" + rules_.replace('\\', ''))
 
 
 @router.message(F.text, TextCommandFilter(["+рулс", "лина +правила"]))
