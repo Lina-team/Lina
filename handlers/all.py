@@ -95,6 +95,9 @@ async def get_note_(message: Message):
         await message.reply(f"Записка '{name}' не найдена")
         return
     res = note.note.replace("\\", "")
+    if message.reply_to_message:
+        await message.reply_to_message.reply(f"*Записка '{name}':* \n{res}")
+        return
     await message.reply(f"*Записка '{name}':* \n{res}")
 
 
@@ -103,6 +106,9 @@ async def rules(message: Message):
     rules_ = await get_rules(group_id=message.chat.id)
     if not rules_:
         await message.reply("Правил группы нет")
+        return
+    if message.reply_to_message:
+        await message.reply_to_message.reply("*Правила группы:*\n" + rules_.replace('\\', ''))
         return
     await message.answer("*Правила группы:*\n" + rules_.replace('\\', ''))
 
