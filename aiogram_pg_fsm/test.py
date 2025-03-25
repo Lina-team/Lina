@@ -23,7 +23,7 @@ data = {
 }
 
 # Initiate a storage with default location
-storage = PGStorage(db_path="postgresql+asyncpg://lime:limearbuz@postgresql-lime.alwaysdata.net/lime_fsm_lina")
+storage = PGStorage(db_path="")
 
 # Create a state to work with
 state = FSMContext(storage=storage, key=key)
