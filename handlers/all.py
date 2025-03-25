@@ -1,7 +1,7 @@
 import warnings
 
 from aiogram import Router, F, Bot
-from aiogram.types import Message, ChatMemberUpdated, ChatMemberOwner, ChatMemberAdministrator
+from aiogram.types import Message
 
 from bs4 import XMLParsedAsHTMLWarning, BeautifulSoup
 
@@ -17,7 +17,7 @@ from middlewares import UserMiddleware
 
 router = Router()
 
-router.message.middleware(UserMiddleware())
+# router.message.middleware(UserMiddleware())
 
 
 @router.message(F.text, TextCommandFilter(["лина расскажи анекдот", "расскажи анекдот", "анекдот"]))
