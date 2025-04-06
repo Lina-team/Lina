@@ -45,7 +45,7 @@ async def help_command(message: Message):
 
 @router.message(F.text, TextCommandFilter(["+записка"]))
 async def create_note_(message: Message, bot: Bot):
-    if not is_group_admin(message, bot):
+    if not await is_group_admin(message, bot):
         return
     try:
         a = message.text.find("\n")
@@ -64,7 +64,7 @@ async def create_note_(message: Message, bot: Bot):
 
 @router.message(F.text, TextCommandFilter(["-записка"]))
 async def delete_note_(message: Message, bot: Bot):
-    if not is_group_admin(message, bot):
+    if not await is_group_admin(message, bot):
         return
     try:
         name = message.text[9:]
@@ -114,7 +114,7 @@ async def rules(message: Message):
 
 @router.message(F.text, TextCommandFilter(["+рулс", "лина +правила"]))
 async def add_rules(message: Message, bot: Bot):
-    if not is_group_admin(message, bot):
+    if not await is_group_admin(message, bot):
         return
     try:
         a = message.text.find("\n")

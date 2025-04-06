@@ -11,9 +11,6 @@ class User(Base):
 class Group(Base):
     __tablename__ = 'group'
     rules: Mapped[str] = mapped_column(String(10000), nullable=True)
-    say_hi: Mapped[bool] = mapped_column(Boolean(), default=True)
-    say_bye: Mapped[bool] = mapped_column(Boolean(), default=True)
-    hi: Mapped[str] = mapped_column(String(500), default="Привет, {имя}!", nullable=True)
     notes: Mapped[list["Note"]] = relationship("Note", back_populates="group", cascade="all, delete-orphan")
 
     
