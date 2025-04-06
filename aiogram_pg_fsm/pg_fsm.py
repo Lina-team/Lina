@@ -1,203 +1,48 @@
-from __future__ import annotations
+from aiogram import types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.contrib.fsm_storage.sqlalchemy import SQLAlchemyStorage
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-from asyncio import run
+# Базовый класс для моделей SQLAlchemy
+Base = declarative_base()
 
-from aiogram.fsm.storage.base import BaseStorage, StorageKey
-from aiogram.fsm.state import State
-from typing import Any, Dict, Optional
+# Модель для хранения состояний FSM
+class FSMState(Base):
+    __tablename__ = 'fsm_states'
 
-import pickle
-import json
-import logging
+    id = Column(Integer, primary_key=True)
+    chat_id = Column(Integer, index=True)
+    state = Column(String)
 
-from sqlalchemy.orm import DeclarativeBase, declarative_base
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy import String, select
-from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine, AsyncSession, AsyncEngine
+# Класс для хранения состояний FSM в базе данных
+class DatabaseFSMStorage(MemoryStorage):
+    def __init__(self, db_url):
+        engine = create_engine(db_url)
+        Base.metadata.create_all(bind=engine)
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
 
+    async def get_state(self, chat: types.Chat, user: types.User = None) -> str:
+        fsm_state = self.session.query(FSMState).filter_by(chat_id=chat.id).first()
+        return fsm_state.state if fsm_state else None
 
-class Base(AsyncAttrs, DeclarativeBase):
-    __abstract__ = True
+    async def set_state(self, chat: types.Chat, user: types.User = None, state: str = None) -> None:
+        fsm_state = self.session.query(FSMState).filter_by(chat_id=chat.id).first()
+        if fsm_state:
+            fsm_state.state = state
+        else:
+            fsm_state = FSMState(chat_id=chat.id, state=state)
+            self.session.add(fsm_state)
+        self.session.commit()
 
+    async def reset_state(self, chat: types.Chat, user: types.User = None) -> None:
+        fsm_state = self.session.query(FSMState).filter_by(chat_id=chat.id).first()
+        if fsm_state:
+            self.session.delete(fsm_state)
+            self.session.commit()
 
-class FSMData(Base):
-    __tablename__ = "fsm_data"
-
-    key: Mapped[str] = mapped_column(String(), primary_key=True)
-    state: Mapped[str] = mapped_column(String())
-    data: Mapped[str] = mapped_column(String())
-
-
-async def create_tables(engine: AsyncEngine) -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-
-logger = logging.getLogger(__name__)
-
-
-class PGStorage(BaseStorage):
-    
-    def __init__(self, db_path: str = 'postgresql+asyncpg://username:password@host:port/db') -> None:
-        """
-        You can point a database path. It will be 'fsm_storage.db' for default.
-        It's possible to choose srtializing method: 'pickle' (default) or 'json'. If you hange serializing method, you shoud delete existing database, and start a new one.
-        'Pickle' is slower than 'json', but it can serialize some kind of objects, that 'json' cannot. 'Pickle' creates unreadable for human data in database, instead of 'json'.
-        """
-        self.db_path = db_path
-        self.engine = create_async_engine(url=self.db_path)
-        self.ser_m = "pickle"
-        self.async_sessionmaker = async_sessionmaker(self.engine, expire_on_commit=False)
-
-        try:
-            run(create_tables(self.engine))
-            logger.debug(f'FSM Storage database {self.db_path} has been opened.')
-        except Exception as e:
-            logger.error(f'Error: \n{e}')
-
-    @staticmethod
-    def _key(key: StorageKey) -> str:
-        """
-        Create a key for every uniqe user, chat and bot
-        """
-        result_string = str(key.bot_id) + ':' + str(key.chat_id) + ':' + str(key.user_id)
-        return result_string
-
-    def _ser(self, obj: object) -> str|bytes|None:
-        """
-        Serialize object
-        """
-        try:
-            if self.ser_m == 'json':
-                return json.dumps(obj)
-            else:
-                return pickle.dumps(obj)
-        except Exception as e:
-            logger.error(f'Serializing error! {e}')
-            return None
-
-    def _dsr(self, obj) -> Optional[Dict[str, Any]]:
-        """
-        Deserialize object
-        """
-        try:
-            if self.ser_m == 'json':
-                return json.loads(obj)
-            else:
-                return pickle.loads(obj)
-        except Exception as e:
-            logger.error(f'Deserializing error! Probably, unsupported serializing method was used. {e}')
-            return None
-
-    async def set_state(self, key: StorageKey, state: State|None = None) -> None:
-        """
-        Set state for specified key
-
-        :param key: storage key
-        :param state: new state
-        """
-        s_key = self._key(key)
-        s_state = state.state if isinstance(state, State) else state
-
-        try:
-            async with self.async_sessionmaker() as session:
-                fsm_data = await session.scalar(select(FSMData).filter_by(key=s_key))
-
-                if not fsm_data:
-                    fsm_data = FSMData(key=s_key, state=s_state, data=s_key)
-                    session.add(fsm_data)
-                    await session.commit()
-                else:
-                    fsm_data.key=s_key
-                    fsm_data.state = s_state
-                    fsm_data.data = s_key
-                    await session.commit()
-        except Exception as e:
-            logger.error(f'Error: \n{e}')
-
-    async def get_state(self, key: StorageKey) -> Optional[str]:
-        """
-        Get key state
-
-        :param key: storage key
-        :return: current state
-        """
-        s_key = self._key(key)
-
-        try:
-            async with self.async_sessionmaker() as session:
-                s_state = await session.scalar(select(FSMData).filter_by(key=s_key))
-
-                if s_state:
-                    return s_state.state
-                else:
-                    return None
-            
-        except Exception as e:
-            logger.error(f'Error: \n{e}')
-            return None
-    
-    async def set_data(self, key: StorageKey, data: Dict[str, Any]) -> None:
-        """
-        Write data (replace)
-
-        :param key: storage key
-        :param data: new data
-        """
-        s_key = self._key(key)
-        s_data = self._ser(data)
-
-        try:
-            async with self.async_sessionmaker() as session:
-                fsm_data = await session.scalar(select(FSMData).filter_by(key=s_key))
-                if not fsm_data:
-                    fsm_data = FSMData(key=s_key, state=s_key, data=s_data)
-                    session.add(fsm_data)
-                    await session.commit()
-                else:
-                    fsm_data.key = s_key
-                    fsm_data.state = s_key
-                    fsm_data.data = s_data
-                    await session.commit()
-        except Exception as e:
-            logger.error(f'Error: \n{e}')
-    
-    async def get_data(self, key: StorageKey) -> Optional[Dict[str, Any]]:
-        """
-        Get current data for key
-
-        :param key: storage key
-        :return: current data
-        """
-        s_key = self._key(key)
-
-        try:
-            async with self.async_sessionmaker() as session:
-                s_data = await session.scalar(select(FSMData).filter_by(key=s_key))
-                if s_data:
-                    return s_data.data
-                else:
-                    return None
-
-        except Exception as e:
-            logger.error(f'Error: \n{e}')
-            return None
-
-    async def update_data(self, key: StorageKey, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Update date in the storage for key (like dict.update)
-
-        :param key: storage key
-        :param data: partial data
-        :return: new data
-        """
-        current_data = await self.get_data(key=key)
-        if not current_data:
-            current_data = {}
-        current_data.update(data)
-        await self.set_data(key=key, data=current_data)
-        return current_data.copy()
-    
-    async def close(self) -> None:
-        logger.debug(f'FSM Storage database {self.db_path} has been closed.')
+# Использование DatabaseFSMStorage в вашем боте
+db_storage = DatabaseFSMStorage('sqlite:///fsm_states.db')
+dp = Dispatcher(bot, storage=db_storage)

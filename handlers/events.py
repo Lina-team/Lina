@@ -13,12 +13,3 @@ async def bot_added(event: ChatMemberUpdated, bot: Bot):
         await bot.send_message(event.chat.id, "*Привет! Я Лина - ваш чат-бот.*\nЧтобы узнать мои команды пиши _Хелп_")
     except:
         pass
-
-
-@router.chat_member(ChatMemberUpdatedFilter(IS_NOT_MEMBER >> IS_MEMBER))
-async def new_member(event: ChatMemberUpdated):
-    if
-    try:
-        await event.answer(f"Привет, {}")
-    except:
-        pass

@@ -6,7 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 
-from pg_fsm import PGStorage
+from pg_fsm import SQLAlchemyStorage
 
 
 class TestStates(StatesGroup):
@@ -23,7 +23,7 @@ data = {
 }
 
 # Initiate a storage with default location
-storage = PGStorage(db_path="")
+storage = SQLAlchemyStorage(db_uri="postgresql://lime:limearbuz@postgresql-lime.alwaysdata.net/lime_fsm_lina")
 
 # Create a state to work with
 state = FSMContext(storage=storage, key=key)

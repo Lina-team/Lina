@@ -3,3 +3,4 @@ migrations
 alembic.ini
 .env
 .idea
+aiogram_pg_fsm

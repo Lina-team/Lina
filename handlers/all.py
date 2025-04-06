@@ -121,8 +121,8 @@ async def add_rules(message: Message, bot: Bot):
         if a == -1:
             await message.reply("Нет текста")
             return
-        if len(message.md_text[a + 1:]) > 1000:
-            await message.reply("Максимальная длина правил не должна превышать 1000 символов")
+        if len(message.md_text[a + 1:]) > 10000:
+            await message.reply("Максимальная длина правил не должна превышать 10000 символов")
             return
         await set_rules(rules=message.md_text[a+1:], group_id=message.chat.id)
         await message.reply("Правила группы добавлены")
