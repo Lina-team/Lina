@@ -23,7 +23,7 @@ data = {
 }
 
 # Initiate a storage with default location
-storage = SQLAlchemyStorage(db_uri="postgresql://lime:limearbuz@postgresql-lime.alwaysdata.net/lime_fsm_lina")
+storage = SQLAlchemyStorage(db_uri="postgresql")
 
 # Create a state to work with
 state = FSMContext(storage=storage, key=key)
